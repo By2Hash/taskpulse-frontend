@@ -3,7 +3,7 @@ import './App.css';
 
 // Si existe la variable de entorno de producción usa esa, de lo contrario usa localhost
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-
+//comentario de prueba para ver si funciona el deploy en Vercel
 function App() {
   const [tasks, setTasks] = useState([]);
   const [newTitle, setNewTitle] = useState('');
