@@ -2,13 +2,20 @@ import { useState, useEffect } from 'react';
 import './App.css';
 
 // 1. Obtener la URL de entorno o usar la de producción por defecto
-const RAW_API_URL = import.meta.env.VITE_API_URL || 'https://taskpulse-backend.vercel.app/api';
+const API_URL = 'https://taskpulse-backend.vercel.app/api';
 
 // 2. Limpieza automática de la URL:
 // Quita barras al final y asegura que siempre termine en /api
-let cleanUrl = RAW_API_URL.replace(/\/+$\vert{}\/api\/*$/gi, ''); 
-const API_URL = `${cleanUrl}/api`;
-
+const cleanApiUrl = (url) => {
+  let cleanedUrl = url.trim();
+  if (cleanedUrl.endsWith('/')) {
+    cleanedUrl = cleanedUrl.slice(0, -1);
+  }
+  if (!cleanedUrl.endsWith('/api')) {
+    cleanedUrl += '/api';
+  }
+  return cleanedUrl;
+}
 function App() {
   const [tasks, setTasks] = useState([]);
   const [newTitle, setNewTitle] = useState('');
