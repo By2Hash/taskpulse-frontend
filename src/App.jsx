@@ -4,7 +4,6 @@ import './App.css';
 const API_URL = 'https://taskpulse-backend.vercel.app/api';
 
 function App() {
-  // Cargar tareas guardadas localmente al iniciar
   const [tasks, setTasks] = useState(() => {
     const saved = localStorage.getItem('cached_tasks');
     return saved ? JSON.parse(saved) : [];
@@ -14,7 +13,6 @@ function App() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   useEffect(() => {
-    // Al volver a estar Online, intentar sincronizar pendientes con Neon
     const handleOnline = () => {
       setIsOffline(false);
       syncPendingTasks();
@@ -24,7 +22,6 @@ function App() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Traer datos de Neon al iniciar
     fetchTasks();
 
     return () => {
@@ -40,9 +37,9 @@ function App() {
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       
-      // Preservar tareas pendientes creadas offline
-      const pendingTasks = JSON.parse(localStorage.getItem('cached_tasks') || '[]')
-        .filter(t => t.pending);
+      // Preservar tareas pendientes que AÚN no se hayan sincronizado
+      const localData = JSON.parse(localStorage.getItem('cached_tasks') || '[]');
+      const pendingTasks = localData.filter(t => t.pending);
 
       const mergedTasks = [...pendingTasks, ...data];
       setTasks(mergedTasks);
@@ -54,9 +51,9 @@ function App() {
     }
   };
 
-  // 2. Sincronizar tareas pendientes cuando vuelve el Wi-Fi
+  // 2. Sincronizar tareas pendientes y LIMPIARLAS de localStorage
   const syncPendingTasks = async () => {
-    const localData = JSON.parse(localStorage.getItem('cached_tasks') || '[]');
+    let localData = JSON.parse(localStorage.getItem('cached_tasks') || '[]');
     const pending = localData.filter(t => t.pending);
 
     if (pending.length === 0) return;
@@ -70,12 +67,17 @@ function App() {
         });
 
         if (res.ok) {
-          await fetchTasks();
+          // Remover la tarea sincronizada del listado local
+          localData = localData.filter(t => t.id !== task.id);
+          localStorage.setItem('cached_tasks', JSON.stringify(localData));
         }
       } catch (err) {
         console.error('Error al sincronizar tarea:', err);
       }
     }
+
+    // Una vez procesadas todas las pendientes, recargar desde Neon
+    await fetchTasks();
   };
 
   // 3. Agregar tarea (Maneja Online y Offline)
