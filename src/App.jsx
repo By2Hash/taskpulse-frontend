@@ -1,15 +1,20 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 
-// Si existe la variable de entorno de producción usa esa, de lo contrario usa localhost
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-//comentario de prueba para ver si funciona el deploy en Vercel
+// 1. Obtener la URL de entorno o usar la de producción por defecto
+const RAW_API_URL = import.meta.env.VITE_API_URL || 'https://taskpulse-backend.vercel.app/api';
+
+// 2. Limpieza automática de la URL:
+// Quita barras al final y asegura que siempre termine en /api
+let cleanUrl = RAW_API_URL.replace(/\/+$\vert{}\/api\/*$/gi, ''); 
+const API_URL = `${cleanUrl}/api`;
+
 function App() {
   const [tasks, setTasks] = useState([]);
   const [newTitle, setNewTitle] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Cargar tareas al iniciar
+  // Cargar tareas al iniciar la aplicación
   useEffect(() => {
     fetchTasks();
   }, []);
@@ -17,10 +22,11 @@ function App() {
   const fetchTasks = async () => {
     try {
       const res = await fetch(`${API_URL}/tasks`);
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       setTasks(data);
     } catch (err) {
-      console.error('Error al cargar tareas:', err);
+      console.error('Error al cargar tareas desde la API:', err);
     } finally {
       setLoading(false);
     }
@@ -36,6 +42,7 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: 1, title: newTitle })
       });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const createdTask = await res.json();
       setTasks([createdTask, ...tasks]);
       setNewTitle('');
@@ -46,11 +53,12 @@ function App() {
 
   const toggleTask = async (id, completed) => {
     try {
-      await fetch(`${API_URL}/tasks/${id}`, {
+      const res = await fetch(`${API_URL}/tasks/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ completed: !completed })
       });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       setTasks(tasks.map(t => t.id === id ? { ...t, completed: !completed } : t));
     } catch (err) {
       console.error('Error al actualizar tarea:', err);
